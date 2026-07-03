@@ -16,14 +16,21 @@
             scroll-snap-stop: always;
             height: 100vh; 
             width: 100%;
+            position: relative;
+            background: #000;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
+        /* ভিডিওর ওপর ক্লিক ও স্ক্রোল দুটোই সচল রাখার জন্য পারফেক্ট সিএসএস */
         .video-card iframe {
             width: 100% !important;
             height: 100% !important;
             object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
         }
     </style>
 </head>
@@ -34,7 +41,6 @@
         <div id="ad-overlay-backdrop" class="absolute inset-0 bg-black/40 z-45 hidden backdrop-blur-[2px] transition-all cursor-pointer"></div>
 
         <div id="video-popup-ad" class="absolute hidden bottom-24 left-4 right-4 z-50 bg-zinc-900/98 border border-zinc-700 p-4 rounded-2xl shadow-2xl backdrop-blur-lg">
-            
             <button id="close-popup-btn" class="absolute -top-3 -right-3 text-white text-sm bg-red-600 hover:bg-red-700 w-7 h-7 rounded-full flex items-center justify-center font-bold shadow-2xl cursor-pointer z-50 transition-transform active:scale-90">✕</button>
 
             <div class="flex justify-between items-center mb-2 px-1">
@@ -44,10 +50,7 @@
             
             <a id="popup-smart-link" href="#" target="_blank" class="block w-full text-center">
                 <div class="w-full bg-zinc-950 py-3 px-2 rounded-xl border border-dashed border-zinc-700 flex flex-col items-center justify-center min-h-[180px] max-h-[280px] overflow-hidden">
-                    
-                    <!-- ⚡ আপনার দেওয়া নতুন Adsterra Banner Ad Container -->
                     <div id="container-1493aee15d660492555a6c358099307f" class="w-full overflow-hidden flex items-center justify-center"></div>
-                    
                     <p class="text-[10px] text-zinc-400 mt-2 font-medium animate-pulse text-cyan-400">🎁 Click here to unlock premium content!</p>
                 </div>
             </a>
@@ -87,7 +90,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, query, orderBy, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Firebase কনফিগারেশন
         const firebaseConfig = {
             apiKey: "AIzaSyCrQYwzDor28hHwGsZ9nVEJYHJ9XR4RSLk",
             authDomain: "pornhubshorts-688c2.firebaseapp.com",
@@ -101,7 +103,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 🔗 আপনার দেওয়া Adsterra Smart Link এখানে আপডেট করা হয়েছে
         const ADSTERRA_SMART_LINK = "https://www.effectivecpmnetwork.com/k0w2xndt?key=6570f2b843f62d5b4b29e50c2d52d8ff"; 
         document.getElementById('popup-smart-link').href = ADSTERRA_SMART_LINK;
 
@@ -110,12 +111,15 @@
         const VIDEOS_PER_PAGE = 4; 
         const feedContainer = document.getElementById('feed-container');
         let userActionCount = 0; 
+        
+        // প্রতিটি ভিডিওর ইউনিক কোড স্টোর করার জন্য একটি গ্লোবাল অবজেক্ট ম্যাপ
+        const videoEmbedMap = {};
 
         function createInFeedAdCard() {
             const adCard = document.createElement('div');
             adCard.className = "video-card flex flex-col justify-center items-center bg-zinc-950 p-6 text-center relative";
             adCard.innerHTML = `
-                <div class="w-full max-w-[300px] bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl flex flex-col items-center">
+                <div class="w-full max-w-[300px] bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl flex flex-col items-center z-40">
                     <span class="text-[10px] bg-cyan-600 text-white px-2 py-0.5 rounded font-bold mb-4 tracking-wider">SPONSORED AD</span>
                     <h3 class="text-sm font-semibold mb-2 text-zinc-200">Unlock Premium & Hot Content!</h3>
                     <p class="text-xs text-zinc-400 mb-6">Click the button below to view restricted premium reward video clips instantly.</p>
@@ -147,11 +151,10 @@
                     if (loader) loader.remove(); 
                     if (holder) holder.classList.remove('opacity-0'); 
                 };
-                
                 setTimeout(() => {
                     if (loader) loader.remove();
                     if (holder) holder.classList.remove('opacity-0');
-                }, 5000);
+                }, 3000);
             } else {
                 if (loader) loader.remove();
             }
@@ -179,10 +182,15 @@
                 
                 let videoCounter = 0;
                 querySnapshot.forEach((doc) => {
+                    const videoId = doc.id;
                     const videoData = doc.data();
+                    
                     const videoCard = document.createElement('div');
                     videoCard.className = "video-card flex justify-center items-center bg-black relative";
-                    videoCard.setAttribute('data-embed', videoData.embedCode); 
+                    videoCard.setAttribute('data-id', videoId); 
+                    
+                    // ম্যাপের ভেতর ইউনিক আইডি দিয়ে কোড সেভ রাখা হলো (কোনো ভুল হওয়ার চান্স নেই)
+                    videoEmbedMap[videoId] = videoData.embedCode;
                     
                     injectVideoWithLoader(videoCard, videoData.embedCode);
                     
@@ -206,7 +214,10 @@
         function attachIntersectionObserver(element) {
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    const originalEmbed = element.getAttribute('data-embed');
+                    const videoId = element.getAttribute('data-id');
+                    if (!videoId) return;
+                    
+                    const originalEmbed = videoEmbedMap[videoId];
 
                     if (entry.isIntersecting) {
                         if (originalEmbed && (element.innerHTML === "" || !element.querySelector('iframe'))) {
@@ -220,12 +231,13 @@
                             loadMoreContent();
                         }
                     } else {
+                        // মেমোরি ফ্রি করতে স্ক্রিনের বাইরের ভিডিওগুলো ক্লিন করা হবে
                         if (originalEmbed) {
                             element.innerHTML = ""; 
                         }
                     }
                 });
-            }, { threshold: 0.5 });
+            }, { threshold: 0.2 });
 
             observer.observe(element);
         }
@@ -272,8 +284,6 @@
                 adScript.type = 'text/javascript';
                 adScript.async = true;
                 adScript.setAttribute('data-cfasync', 'false');
-                
-                // 🛑 আপনার দেওয়া Adsterra Banner Script URL এখানে সেট করা হয়েছে
                 adScript.src = 'https://pl30183578.effectivecpmnetwork.com/1493aee15d660492555a6c358099307f/invoke.js';
                 
                 document.body.appendChild(adScript);
