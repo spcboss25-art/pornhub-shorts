@@ -6,27 +6,37 @@
     <title>PornHub Shorts</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+        }
         .video-container {
             scroll-snap-type: y mandatory;
             height: 100vh;
+            height: -webkit-fill-available; /* মোবাইল ব্রাউজারের জন্য পারফেক্ট হাইট */
             scroll-behavior: smooth;
         }
         .video-card {
             scroll-snap-align: start;
             scroll-snap-stop: always;
             height: 100vh; 
+            height: -webkit-fill-available;
             width: 100%;
             position: relative;
             background: #000;
+            display: flex;
+            justify-content: center;
+            items-center;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* ভিডিওর ওপর ক্লিক ও স্ক্রোল দুটোই সচল রাখার জন্য পারফেক্ট সিএসএস */
         .video-card iframe {
             width: 100% !important;
             height: 100% !important;
-            object-fit: cover;
             position: absolute;
             top: 0;
             left: 0;
@@ -34,7 +44,7 @@
         }
     </style>
 </head>
-<body class="bg-black text-white flex justify-center items-center h-screen w-full overflow-hidden">
+<body class="bg-black text-white flex justify-center items-center w-full">
 
     <div class="relative w-full h-full max-w-md bg-zinc-950 flex flex-col shadow-2xl border-x border-zinc-800">
         
@@ -75,6 +85,7 @@
             </button>
         </div>
 
+        <!-- মেইন স্ক্রোলিং কন্টেইনার -->
         <main id="feed-container" class="w-full overflow-y-scroll video-container no-scrollbar z-10">
             <div id="loading" class="flex h-full items-center justify-center text-zinc-500">
                 <div class="flex flex-col items-center gap-2">
@@ -108,16 +119,15 @@
 
         let lastVisibleVideo = null;
         let isFetching = false;
-        const VIDEOS_PER_PAGE = 4; 
+        const VIDEOS_PER_PAGE = 5; 
         const feedContainer = document.getElementById('feed-container');
         let userActionCount = 0; 
         
-        // প্রতিটি ভিডিওর ইউনিক কোড স্টোর করার জন্য একটি গ্লোবাল অবজেক্ট ম্যাপ
         const videoEmbedMap = {};
 
         function createInFeedAdCard() {
             const adCard = document.createElement('div');
-            adCard.className = "video-card flex flex-col justify-center items-center bg-zinc-950 p-6 text-center relative";
+            adCard.className = "video-card p-6 text-center";
             adCard.innerHTML = `
                 <div class="w-full max-w-[300px] bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl flex flex-col items-center z-40">
                     <span class="text-[10px] bg-cyan-600 text-white px-2 py-0.5 rounded font-bold mb-4 tracking-wider">SPONSORED AD</span>
@@ -186,12 +196,12 @@
                     const videoData = doc.data();
                     
                     const videoCard = document.createElement('div');
-                    videoCard.className = "video-card flex justify-center items-center bg-black relative";
+                    videoCard.className = "video-card";
                     videoCard.setAttribute('data-id', videoId); 
                     
-                    // ম্যাপের ভেতর ইউনিক আইডি দিয়ে কোড সেভ রাখা হলো (কোনো ভুল হওয়ার চান্স নেই)
                     videoEmbedMap[videoId] = videoData.embedCode;
                     
+                    // শুরুতে আমরা ডাইনামিকালি প্রথমবার লোড করছি
                     injectVideoWithLoader(videoCard, videoData.embedCode);
                     
                     feedContainer.appendChild(videoCard);
@@ -219,25 +229,30 @@
                     
                     const originalEmbed = videoEmbedMap[videoId];
 
-                    if (entry.isIntersecting) {
-                        if (originalEmbed && (element.innerHTML === "" || !element.querySelector('iframe'))) {
+                    // 🛠️ লজিক ইম্প্রুভমেন্ট: যখন ভিডিওটি পুরোপুরি স্ক্রিনের মাঝখানে আসবে (intersection Ratio ভালো থাকবে)
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                        if (originalEmbed && !element.querySelector('iframe')) {
                             injectVideoWithLoader(element, originalEmbed);
                         }
 
                         userActionCount++;
                         checkAndTriggerSmartLink();
 
+                        // ইনফিনিট স্ক্রোল ট্রিগার
                         if (element === feedContainer.lastChild || element === feedContainer.lastChild.previousSibling) {
                             loadMoreContent();
                         }
-                    } else {
-                        // মেমোরি ফ্রি করতে স্ক্রিনের বাইরের ভিডিওগুলো ক্লিন করা হবে
-                        if (originalEmbed) {
-                            element.innerHTML = ""; 
+                    } else if (!entry.isIntersecting) {
+                        // স্ক্রিনের বাইরে গেলে মেমোরি খালি করার জন্য রিমুভ করা হবে
+                        if (originalEmbed && element.querySelector('iframe')) {
+                            element.innerHTML = `<div class="text-zinc-700 text-xs text-center">Paused</div>`; 
                         }
                     }
                 });
-            }, { threshold: 0.2 });
+            }, { 
+                root: feedContainer,
+                threshold: [0.1, 0.5, 0.9] // মাল্টিপল থ্রেশহোল্ড চেকিং যেন ভুল ভিডিও ট্র্যাপ না হয়
+            });
 
             observer.observe(element);
         }
@@ -254,16 +269,18 @@
             userActionCount++; 
             checkAndTriggerSmartLink();
 
+            const cardHeight = feedContainer.clientHeight;
             if (direction === 'down') {
-                feedContainer.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+                feedContainer.scrollBy({ top: cardHeight, behavior: 'smooth' });
             } else if (direction === 'up') {
-                feedContainer.scrollBy({ top: -window.innerHeight, behavior: 'smooth' });
+                feedContainer.scrollBy({ top: -cardHeight, behavior: 'smooth' });
             }
         }
 
         document.getElementById('scroll-down-btn').addEventListener('click', () => handleBtnNavigation('down'));
         document.getElementById('scroll-up-btn').addEventListener('click', () => handleBtnNavigation('up'));
 
+        // পপআপ ব্যানার অ্যাড লজিক
         const POPUP_INTERVAL = 60000; 
         const adPopup = document.getElementById('video-popup-ad');
         const adOverlay = document.getElementById('ad-overlay-backdrop');
