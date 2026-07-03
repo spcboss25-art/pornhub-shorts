@@ -31,8 +31,6 @@
 
     <div class="relative w-full h-full max-w-md bg-zinc-950 flex flex-col shadow-2xl border-x border-zinc-800">
         
-        
-
         <div id="ad-overlay-backdrop" class="absolute inset-0 bg-black/40 z-45 hidden backdrop-blur-[2px] transition-all cursor-pointer"></div>
 
         <div id="video-popup-ad" class="absolute hidden bottom-24 left-4 right-4 z-50 bg-zinc-900/98 border border-zinc-700 p-4 rounded-2xl shadow-2xl backdrop-blur-lg">
@@ -47,7 +45,8 @@
             <a id="popup-smart-link" href="#" target="_blank" class="block w-full text-center">
                 <div class="w-full bg-zinc-950 py-3 px-2 rounded-xl border border-dashed border-zinc-700 flex flex-col items-center justify-center min-h-[180px] max-h-[280px] overflow-hidden">
                     
-                    <div id="container-ed2c32c68638011cd3811a028b8b1b40" class="w-full overflow-hidden flex items-center justify-center"></div>
+                    <!-- ⚡ আপনার দেওয়া নতুন Adsterra Banner Ad Container -->
+                    <div id="container-1493aee15d660492555a6c358099307f" class="w-full overflow-hidden flex items-center justify-center"></div>
                     
                     <p class="text-[10px] text-zinc-400 mt-2 font-medium animate-pulse text-cyan-400">🎁 Click here to unlock premium content!</p>
                 </div>
@@ -88,7 +87,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, query, orderBy, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 🆕 আপনার দেওয়া নতুন Firebase কনফিগারেশন এখানে আপডেট করা হয়েছে
+        // Firebase কনফিগারেশন
         const firebaseConfig = {
             apiKey: "AIzaSyCrQYwzDor28hHwGsZ9nVEJYHJ9XR4RSLk",
             authDomain: "pornhubshorts-688c2.firebaseapp.com",
@@ -102,8 +101,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 🔗 Adsterra Smart Link (আপাতত র্যান্ডম দেওয়া, পরে পরিবর্তন করে নিবেন)
-        const ADSTERRA_SMART_LINK = "https://www.example.com/your-smart-link-here"; 
+        // 🔗 আপনার দেওয়া Adsterra Smart Link এখানে আপডেট করা হয়েছে
+        const ADSTERRA_SMART_LINK = "https://www.effectivecpmnetwork.com/k0w2xndt?key=6570f2b843f62d5b4b29e50c2d52d8ff"; 
         document.getElementById('popup-smart-link').href = ADSTERRA_SMART_LINK;
 
         let lastVisibleVideo = null;
@@ -274,8 +273,8 @@
                 adScript.async = true;
                 adScript.setAttribute('data-cfasync', 'false');
                 
-                // 🛑 Adsterra Native/Banner Script URL (আপাতত ডামি দেওয়া, পরে আপনার স্ক্রিপ্ট সোর্স লিংকটি এখানে বসাবেন)
-                adScript.src = 'https://www.example.com/your-adsterra-script-invoke.js';
+                // 🛑 আপনার দেওয়া Adsterra Banner Script URL এখানে সেট করা হয়েছে
+                adScript.src = 'https://pl30183578.effectivecpmnetwork.com/1493aee15d660492555a6c358099307f/invoke.js';
                 
                 document.body.appendChild(adScript);
                 isScriptLoaded = true;
