@@ -2,34 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PornHub Shorts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>xHamster Shorts</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-            background-color: #000;
-        }
+        /* মোবাইলের ডাইনামিক স্ক্রিন সাইজ অনুযায়ী অ্যাডজাস্টমেন্ট */
         .video-container {
             scroll-snap-type: y mandatory;
-            height: 100vh;
-            height: -webkit-fill-available; /* মোবাইল ব্রাউজারের জন্য পারফেক্ট হাইট */
+            height: 100dvh; /* dynamic vh যা মোবাইলের ব্রাউজার বার বাদ দিয়ে হিসাব করে */
             scroll-behavior: smooth;
         }
         .video-card {
             scroll-snap-align: start;
             scroll-snap-stop: always;
-            height: 100vh; 
-            height: -webkit-fill-available;
+            height: 100dvh; 
             width: 100%;
-            position: relative;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            items-center;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -37,20 +24,19 @@
         .video-card iframe {
             width: 100% !important;
             height: 100% !important;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 10;
+            object-fit: cover;
         }
     </style>
 </head>
-<body class="bg-black text-white flex justify-center items-center w-full">
+<body class="bg-black text-white flex justify-center items-center h-screen w-full overflow-hidden antialiased">
 
-    <div class="relative w-full h-full max-w-md bg-zinc-950 flex flex-col shadow-2xl border-x border-zinc-800">
+    <div class="relative w-full h-[100dvh] max-w-md bg-zinc-950 flex flex-col shadow-2xl border-x border-zinc-800 overflow-hidden">
         
+
         <div id="ad-overlay-backdrop" class="absolute inset-0 bg-black/40 z-45 hidden backdrop-blur-[2px] transition-all cursor-pointer"></div>
 
         <div id="video-popup-ad" class="absolute hidden bottom-24 left-4 right-4 z-50 bg-zinc-900/98 border border-zinc-700 p-4 rounded-2xl shadow-2xl backdrop-blur-lg">
+            
             <button id="close-popup-btn" class="absolute -top-3 -right-3 text-white text-sm bg-red-600 hover:bg-red-700 w-7 h-7 rounded-full flex items-center justify-center font-bold shadow-2xl cursor-pointer z-50 transition-transform active:scale-90">✕</button>
 
             <div class="flex justify-between items-center mb-2 px-1">
@@ -60,12 +46,13 @@
             
             <a id="popup-smart-link" href="#" target="_blank" class="block w-full text-center">
                 <div class="w-full bg-zinc-950 py-3 px-2 rounded-xl border border-dashed border-zinc-700 flex flex-col items-center justify-center min-h-[180px] max-h-[280px] overflow-hidden">
+                    <!-- নতুন Native Banner Container আইডি বসানো হয়েছে -->
                     <div id="container-1493aee15d660492555a6c358099307f" class="w-full overflow-hidden flex items-center justify-center"></div>
                     <p class="text-[10px] text-zinc-400 mt-2 font-medium animate-pulse text-cyan-400">🎁 Click here to unlock premium content!</p>
                 </div>
             </a>
 
-            <div id="backup-close-container" class="w-full mt-2 hidden text-center">
+            <div class="id-backup-close-container w-full mt-2 hidden text-center">
                 <button id="backup-close-btn" class="text-[11px] font-semibold text-zinc-400 hover:text-white bg-zinc-850 px-4 py-1.5 rounded-lg border border-zinc-700 w-full active:scale-95 transition-all">
                     Skip Advertisement
                 </button>
@@ -85,8 +72,7 @@
             </button>
         </div>
 
-        <!-- মেইন স্ক্রোলিং কন্টেইনার -->
-        <main id="feed-container" class="w-full overflow-y-scroll video-container no-scrollbar z-10">
+        <main id="feed-container" class="w-full overflow-y-scroll video-container no-scrollbar z-10 flex-1">
             <div id="loading" class="flex h-full items-center justify-center text-zinc-500">
                 <div class="flex flex-col items-center gap-2">
                     <div class="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
@@ -101,6 +87,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, query, orderBy, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+        // নতুন Firebase Config আপডেট করা হয়েছে
         const firebaseConfig = {
             apiKey: "AIzaSyCrQYwzDor28hHwGsZ9nVEJYHJ9XR4RSLk",
             authDomain: "pornhubshorts-688c2.firebaseapp.com",
@@ -114,22 +101,21 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // নতুন Adsterra Smart Link আপডেট করা হয়েছে
         const ADSTERRA_SMART_LINK = "https://www.effectivecpmnetwork.com/k0w2xndt?key=6570f2b843f62d5b4b29e50c2d52d8ff"; 
         document.getElementById('popup-smart-link').href = ADSTERRA_SMART_LINK;
 
         let lastVisibleVideo = null;
         let isFetching = false;
-        const VIDEOS_PER_PAGE = 5; 
+        const VIDEOS_PER_PAGE = 4; 
         const feedContainer = document.getElementById('feed-container');
         let userActionCount = 0; 
-        
-        const videoEmbedMap = {};
 
         function createInFeedAdCard() {
             const adCard = document.createElement('div');
-            adCard.className = "video-card p-6 text-center";
+            adCard.className = "video-card flex flex-col justify-center items-center bg-zinc-950 p-6 text-center relative";
             adCard.innerHTML = `
-                <div class="w-full max-w-[300px] bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl flex flex-col items-center z-40">
+                <div class="w-full max-w-[300px] bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl flex flex-col items-center">
                     <span class="text-[10px] bg-cyan-600 text-white px-2 py-0.5 rounded font-bold mb-4 tracking-wider">SPONSORED AD</span>
                     <h3 class="text-sm font-semibold mb-2 text-zinc-200">Unlock Premium & Hot Content!</h3>
                     <p class="text-xs text-zinc-400 mb-6">Click the button below to view restricted premium reward video clips instantly.</p>
@@ -147,6 +133,9 @@
                     <div class="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-3"></div>
                     <p class="text-xs text-zinc-400 animate-pulse font-medium tracking-wide">Loading video stream...</p>
                 </div>
+                
+                <div class="absolute top-0 left-0 right-0 bottom-[60px] z-30 bg-transparent click-shield-layer pointer-events-none"></div>
+
                 <div class="iframe-holder w-full h-full opacity-0 transition-opacity duration-300">
                     ${embedCode}
                 </div>
@@ -155,18 +144,48 @@
             const iframe = containerElement.querySelector('iframe');
             const loader = containerElement.querySelector('.video-loader-wrapper');
             const holder = containerElement.querySelector('.iframe-holder');
+            const shield = containerElement.querySelector('.click-shield-layer');
 
             if (iframe) {
+                iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
+
                 iframe.onload = () => {
-                    if (loader) loader.remove(); 
-                    if (holder) holder.classList.remove('opacity-0'); 
+                    if (loader) loader.remove();
+                    if (holder) holder.classList.remove('opacity-0');
                 };
+
+                let isTracked = false;
+                
+                const checkIframeFocus = () => {
+                    if (document.activeElement === iframe && !isTracked) {
+                        isTracked = true;
+                        
+                        userActionCount++;
+                        checkAndTriggerSmartLink();
+
+                        if (shield) {
+                            shield.style.pointerEvents = 'auto';
+                        }
+                        
+                        window.removeEventListener('blur', checkIframeFocus);
+                    }
+                };
+
+                window.addEventListener('blur', checkIframeFocus);
+
+                shield.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    userActionCount++;
+                    checkAndTriggerSmartLink();
+                });
+
                 setTimeout(() => {
                     if (loader) loader.remove();
                     if (holder) holder.classList.remove('opacity-0');
-                }, 3000);
+                }, 5000);
             } else {
                 if (loader) loader.remove();
+                if (shield) shield.remove();
             }
         }
 
@@ -192,16 +211,11 @@
                 
                 let videoCounter = 0;
                 querySnapshot.forEach((doc) => {
-                    const videoId = doc.id;
                     const videoData = doc.data();
-                    
                     const videoCard = document.createElement('div');
-                    videoCard.className = "video-card";
-                    videoCard.setAttribute('data-id', videoId); 
+                    videoCard.className = "video-card flex justify-center items-center bg-black relative";
+                    videoCard.setAttribute('data-embed', videoData.embedCode); 
                     
-                    videoEmbedMap[videoId] = videoData.embedCode;
-                    
-                    // শুরুতে আমরা ডাইনামিকালি প্রথমবার লোড করছি
                     injectVideoWithLoader(videoCard, videoData.embedCode);
                     
                     feedContainer.appendChild(videoCard);
@@ -224,35 +238,26 @@
         function attachIntersectionObserver(element) {
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    const videoId = element.getAttribute('data-id');
-                    if (!videoId) return;
-                    
-                    const originalEmbed = videoEmbedMap[videoId];
+                    const originalEmbed = element.getAttribute('data-embed');
 
-                    // 🛠️ লজিক ইম্প্রুভমেন্ট: যখন ভিডিওটি পুরোপুরি স্ক্রিনের মাঝখানে আসবে (intersection Ratio ভালো থাকবে)
-                    if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-                        if (originalEmbed && !element.querySelector('iframe')) {
+                    if (entry.isIntersecting) {
+                        if (originalEmbed && (element.innerHTML === "" || !element.querySelector('iframe'))) {
                             injectVideoWithLoader(element, originalEmbed);
                         }
 
                         userActionCount++;
                         checkAndTriggerSmartLink();
 
-                        // ইনফিনিট স্ক্রোল ট্রিগার
                         if (element === feedContainer.lastChild || element === feedContainer.lastChild.previousSibling) {
                             loadMoreContent();
                         }
-                    } else if (!entry.isIntersecting) {
-                        // স্ক্রিনের বাইরে গেলে মেমোরি খালি করার জন্য রিমুভ করা হবে
-                        if (originalEmbed && element.querySelector('iframe')) {
-                            element.innerHTML = `<div class="text-zinc-700 text-xs text-center">Paused</div>`; 
+                    } else {
+                        if (originalEmbed) {
+                            element.innerHTML = ""; 
                         }
                     }
                 });
-            }, { 
-                root: feedContainer,
-                threshold: [0.1, 0.5, 0.9] // মাল্টিপল থ্রেশহোল্ড চেকিং যেন ভুল ভিডিও ট্র্যাপ না হয়
-            });
+            }, { threshold: 0.5 });
 
             observer.observe(element);
         }
@@ -269,22 +274,20 @@
             userActionCount++; 
             checkAndTriggerSmartLink();
 
-            const cardHeight = feedContainer.clientHeight;
             if (direction === 'down') {
-                feedContainer.scrollBy({ top: cardHeight, behavior: 'smooth' });
+                feedContainer.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
             } else if (direction === 'up') {
-                feedContainer.scrollBy({ top: -cardHeight, behavior: 'smooth' });
+                feedContainer.scrollBy({ top: -window.innerHeight, behavior: 'smooth' });
             }
         }
 
         document.getElementById('scroll-down-btn').addEventListener('click', () => handleBtnNavigation('down'));
         document.getElementById('scroll-up-btn').addEventListener('click', () => handleBtnNavigation('up'));
 
-        // পপআপ ব্যানার অ্যাড লজিক
         const POPUP_INTERVAL = 60000; 
         const adPopup = document.getElementById('video-popup-ad');
         const adOverlay = document.getElementById('ad-overlay-backdrop');
-        const backupClose = document.getElementById('backup-close-container');
+        const backupClose = document.querySelector('.id-backup-close-container');
         let isScriptLoaded = false; 
 
         setInterval(() => {
@@ -301,6 +304,7 @@
                 adScript.type = 'text/javascript';
                 adScript.async = true;
                 adScript.setAttribute('data-cfasync', 'false');
+                // নতুন Native Banner Script URL আপডেট করা হয়েছে
                 adScript.src = 'https://pl30183578.effectivecpmnetwork.com/1493aee15d660492555a6c358099307f/invoke.js';
                 
                 document.body.appendChild(adScript);
