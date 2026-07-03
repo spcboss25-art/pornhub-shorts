@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PornHub Shorts</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        .video-container {
+            scroll-snap-type: y mandatory;
+            height: 100vh;
+            scroll-behavior: smooth;
+        }
+        .video-card {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            height: 100vh; 
+            width: 100%;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .video-card iframe {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body class="bg-black text-white flex justify-center items-center h-screen w-full overflow-hidden">
+
+    <div class="relative w-full h-full max-w-md bg-zinc-950 flex flex-col shadow-2xl border-x border-zinc-800">
+        
+        
+
+        <div id="ad-overlay-backdrop" class="absolute inset-0 bg-black/40 z-45 hidden backdrop-blur-[2px] transition-all cursor-pointer"></div>
+
+        <div id="video-popup-ad" class="absolute hidden bottom-24 left-4 right-4 z-50 bg-zinc-900/98 border border-zinc-700 p-4 rounded-2xl shadow-2xl backdrop-blur-lg">
+            
+            <button id="close-popup-btn" class="absolute -top-3 -right-3 text-white text-sm bg-red-600 hover:bg-red-700 w-7 h-7 rounded-full flex items-center justify-center font-bold shadow-2xl cursor-pointer z-50 transition-transform active:scale-90">✕</button>
+
+            <div class="flex justify-between items-center mb-2 px-1">
+                <span class="text-[9px] bg-red-600/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded font-bold tracking-wider">SPONSORED AD</span>
+                <span class="text-[9px] text-zinc-400">Tap anywhere to close ad</span>
+            </div>
+            
+            <a id="popup-smart-link" href="#" target="_blank" class="block w-full text-center">
+                <div class="w-full bg-zinc-950 py-3 px-2 rounded-xl border border-dashed border-zinc-700 flex flex-col items-center justify-center min-h-[180px] max-h-[280px] overflow-hidden">
+                    
+                    <div id="container-ed2c32c68638011cd3811a028b8b1b40" class="w-full overflow-hidden flex items-center justify-center"></div>
+                    
+                    <p class="text-[10px] text-zinc-400 mt-2 font-medium animate-pulse text-cyan-400">🎁 Click here to unlock premium content!</p>
+                </div>
+            </a>
+
+            <div id="backup-close-container" class="w-full mt-2 hidden text-center">
+                <button id="backup-close-btn" class="text-[11px] font-semibold text-zinc-400 hover:text-white bg-zinc-850 px-4 py-1.5 rounded-lg border border-zinc-700 w-full active:scale-95 transition-all">
+                    Skip Advertisement
+                </button>
+            </div>
+        </div>
+
+        <div class="absolute right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-4">
+            <button id="scroll-up-btn" class="w-12 h-12 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/50 backdrop-blur-md rounded-full flex items-center justify-center text-white shadow-xl active:scale-95 transition-all cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
+                </svg>
+            </button>
+            <button id="scroll-down-btn" class="w-12 h-12 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/50 backdrop-blur-md rounded-full flex items-center justify-center text-white shadow-xl active:scale-95 transition-all cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
+                </svg>
+            </button>
+        </div>
+
+        <main id="feed-container" class="w-full overflow-y-scroll video-container no-scrollbar z-10">
+            <div id="loading" class="flex h-full items-center justify-center text-zinc-500">
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-sm font-medium tracking-wide text-zinc-400">Loading initial feed...</p>
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, orderBy, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // 🆕 আপনার দেওয়া নতুন Firebase কনফিগারেশন এখানে আপডেট করা হয়েছে
+        const firebaseConfig = {
+            apiKey: "AIzaSyCrQYwzDor28hHwGsZ9nVEJYHJ9XR4RSLk",
+            authDomain: "pornhubshorts-688c2.firebaseapp.com",
+            projectId: "pornhubshorts-688c2",
+            storageBucket: "pornhubshorts-688c2.firebasestorage.app",
+            messagingSenderId: "1080262789319",
+            appId: "1:1080262789319:web:2f3f6a14bca8a9adbc16e2",
+            measurementId: "G-V84J981HZ6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 🔗 Adsterra Smart Link (আপাতত র্যান্ডম দেওয়া, পরে পরিবর্তন করে নিবেন)
+        const ADSTERRA_SMART_LINK = "https://www.example.com/your-smart-link-here"; 
+        document.getElementById('popup-smart-link').href = ADSTERRA_SMART_LINK;
+
+        let lastVisibleVideo = null;
+        let isFetching = false;
+        const VIDEOS_PER_PAGE = 4; 
+        const feedContainer = document.getElementById('feed-container');
+        let userActionCount = 0; 
+
+        function createInFeedAdCard() {
+            const adCard = document.createElement('div');
+            adCard.className = "video-card flex flex-col justify-center items-center bg-zinc-950 p-6 text-center relative";
+            adCard.innerHTML = `
+                <div class="w-full max-w-[300px] bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl flex flex-col items-center">
+                    <span class="text-[10px] bg-cyan-600 text-white px-2 py-0.5 rounded font-bold mb-4 tracking-wider">SPONSORED AD</span>
+                    <h3 class="text-sm font-semibold mb-2 text-zinc-200">Unlock Premium & Hot Content!</h3>
+                    <p class="text-xs text-zinc-400 mb-6">Click the button below to view restricted premium reward video clips instantly.</p>
+                    <a href="${ADSTERRA_SMART_LINK}" target="_blank" class="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 py-3 rounded-xl text-sm font-bold shadow-lg active:scale-98 transition-all">
+                        🚀 Watch Full Video Now
+                    </a>
+                </div>
+            `;
+            return adCard;
+        }
+
+        function injectVideoWithLoader(containerElement, embedCode) {
+            containerElement.innerHTML = `
+                <div class="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 z-20 video-loader-wrapper">
+                    <div class="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                    <p class="text-xs text-zinc-400 animate-pulse font-medium tracking-wide">Loading video stream...</p>
+                </div>
+                <div class="iframe-holder w-full h-full opacity-0 transition-opacity duration-300">
+                    ${embedCode}
+                </div>
+            `;
+
+            const iframe = containerElement.querySelector('iframe');
+            const loader = containerElement.querySelector('.video-loader-wrapper');
+            const holder = containerElement.querySelector('.iframe-holder');
+
+            if (iframe) {
+                iframe.onload = () => {
+                    if (loader) loader.remove(); 
+                    if (holder) holder.classList.remove('opacity-0'); 
+                };
+                
+                setTimeout(() => {
+                    if (loader) loader.remove();
+                    if (holder) holder.classList.remove('opacity-0');
+                }, 5000);
+            } else {
+                if (loader) loader.remove();
+            }
+        }
+
+        async function loadMoreContent() {
+            if (isFetching) return;
+            isFetching = true;
+
+            try {
+                let videoQuery = query(collection(db, "videos"), orderBy("createdAt", "desc"), limit(VIDEOS_PER_PAGE));
+                if (lastVisibleVideo) {
+                    videoQuery = query(collection(db, "videos"), orderBy("createdAt", "desc"), startAfter(lastVisibleVideo), limit(VIDEOS_PER_PAGE));
+                } else {
+                    feedContainer.innerHTML = ''; 
+                }
+
+                const querySnapshot = await getDocs(videoQuery);
+                if (querySnapshot.empty) {
+                    isFetching = false;
+                    return;
+                }
+
+                lastVisibleVideo = querySnapshot.docs[querySnapshot.docs.length - 1];
+                
+                let videoCounter = 0;
+                querySnapshot.forEach((doc) => {
+                    const videoData = doc.data();
+                    const videoCard = document.createElement('div');
+                    videoCard.className = "video-card flex justify-center items-center bg-black relative";
+                    videoCard.setAttribute('data-embed', videoData.embedCode); 
+                    
+                    injectVideoWithLoader(videoCard, videoData.embedCode);
+                    
+                    feedContainer.appendChild(videoCard);
+                    attachIntersectionObserver(videoCard);
+                    videoCounter++;
+
+                    if (videoCounter === 3) {
+                        const inFeedAd = createInFeedAdCard();
+                        feedContainer.appendChild(inFeedAd);
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error loading content: ", error);
+            } finally {
+                isFetching = false;
+            }
+        }
+
+        function attachIntersectionObserver(element) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const originalEmbed = element.getAttribute('data-embed');
+
+                    if (entry.isIntersecting) {
+                        if (originalEmbed && (element.innerHTML === "" || !element.querySelector('iframe'))) {
+                            injectVideoWithLoader(element, originalEmbed);
+                        }
+
+                        userActionCount++;
+                        checkAndTriggerSmartLink();
+
+                        if (element === feedContainer.lastChild || element === feedContainer.lastChild.previousSibling) {
+                            loadMoreContent();
+                        }
+                    } else {
+                        if (originalEmbed) {
+                            element.innerHTML = ""; 
+                        }
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            observer.observe(element);
+        }
+
+        function checkAndTriggerSmartLink() {
+            const requiredClicks = Math.floor(Math.random() * (10 - 8 + 1)) + 8; 
+            if (userActionCount >= requiredClicks) {
+                window.open(ADSTERRA_SMART_LINK, '_blank');
+                userActionCount = 0; 
+            }
+        }
+
+        function handleBtnNavigation(direction) {
+            userActionCount++; 
+            checkAndTriggerSmartLink();
+
+            if (direction === 'down') {
+                feedContainer.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+            } else if (direction === 'up') {
+                feedContainer.scrollBy({ top: -window.innerHeight, behavior: 'smooth' });
+            }
+        }
+
+        document.getElementById('scroll-down-btn').addEventListener('click', () => handleBtnNavigation('down'));
+        document.getElementById('scroll-up-btn').addEventListener('click', () => handleBtnNavigation('up'));
+
+        const POPUP_INTERVAL = 60000; 
+        const adPopup = document.getElementById('video-popup-ad');
+        const adOverlay = document.getElementById('ad-overlay-backdrop');
+        const backupClose = document.getElementById('backup-close-container');
+        let isScriptLoaded = false; 
+
+        setInterval(() => {
+            adPopup.classList.remove('hidden'); 
+            adOverlay.classList.remove('hidden'); 
+            backupClose.classList.add('hidden'); 
+
+            setTimeout(() => {
+                backupClose.classList.remove('hidden');
+            }, 3000);
+
+            if (!isScriptLoaded) {
+                const adScript = document.createElement('script');
+                adScript.type = 'text/javascript';
+                adScript.async = true;
+                adScript.setAttribute('data-cfasync', 'false');
+                
+                // 🛑 Adsterra Native/Banner Script URL (আপাতত ডামি দেওয়া, পরে আপনার স্ক্রিপ্ট সোর্স লিংকটি এখানে বসাবেন)
+                adScript.src = 'https://www.example.com/your-adsterra-script-invoke.js';
+                
+                document.body.appendChild(adScript);
+                isScriptLoaded = true;
+            }
+        }, POPUP_INTERVAL);
+
+        function hidePopup() {
+            adPopup.classList.add('hidden');
+            adOverlay.classList.add('hidden');
+        }
+
+        document.getElementById('close-popup-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            hidePopup();
+        });
+        
+        document.getElementById('backup-close-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            hidePopup();
+        });
+
+        adOverlay.addEventListener('click', () => {
+            hidePopup();
+        });
+
+        loadMoreContent();
+    </script>
+</body>
+</html>
